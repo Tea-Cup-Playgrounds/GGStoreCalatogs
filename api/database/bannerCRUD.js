@@ -84,6 +84,7 @@ const createBanner = async (req, res) => {
 };
 
 // Update banner
+// Update banner
 const updateBanner = async (req, res) => {
   try {
     const { title, banner_image_url, redirect_url, active, start_date, end_date } = req.body;
@@ -96,10 +97,30 @@ const updateBanner = async (req, res) => {
       });
     }
     
-    const [result] = await db.execute(
-      'UPDATE web_banners SET title = ?, banner_image_url = ?, redirect_url = ?, active = ?, start_date = ?, end_date = ?, updated_at = NOW() WHERE id = ?',
-      [title || null, banner_image_url || null, redirect_url || null, active, start_date || null, end_date || null, req.params.id]
-    );
+    // The SQL query is changed to conditionally update the banner_image_url
+    const sql = `
+      UPDATE web_banners 
+      SET 
+        title = ?, 
+        banner_image_url = IFNULL(?, banner_image_url), 
+        redirect_url = ?, 
+        active = ?, 
+        start_date = ?, 
+        end_date = ?, 
+        updated_at = NOW() 
+      WHERE id = ?`;
+
+    const values = [
+      title || null,
+      banner_image_url || null,
+      redirect_url || null,
+      active,
+      start_date || null,
+      end_date || null,
+      req.params.id
+    ];
+
+    const [result] = await db.execute(sql, values);
     
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'Banner not found' });
@@ -107,7 +128,8 @@ const updateBanner = async (req, res) => {
     
     res.json({ success: true, message: 'Banner updated successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error('Error updating banner:', error);
+    res.status(500).json({ success: false, message: 'An internal server error occurred', error: error.message });
   }
 };
 

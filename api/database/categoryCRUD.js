@@ -64,7 +64,7 @@ const updateCategory = async (req, res) => {
     }
 
     const [result] = await db.execute(
-      'UPDATE categories SET name = ?, category_photo = ? WHERE id = ?',
+      'UPDATE categories SET name = ?, category_photo = IFNULL(?, category_photo) WHERE id = ?',
       [name, category_photo || null, req.params.id]
     );
     if (result.affectedRows === 0) {

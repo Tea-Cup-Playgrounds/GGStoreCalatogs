@@ -73,12 +73,6 @@ class BrandsPage {
                         <label for="brandName" class="form-label">Brand Name *</label>
                         <input type="text" id="brandName" name="name" class="form-control" required>
                       </div>
-
-                      <div class="form-group">
-                        <label for="brandDescription" class="form-label">Description</label>
-                        <textarea id="brandDescription" name="description" class="form-control" rows="4" placeholder="Brief description of the brand..."></textarea>
-                        <small class="form-text text-muted">Optional brand description for internal reference</small>
-                      </div>
                     </div>
                   </div>
                 </div>

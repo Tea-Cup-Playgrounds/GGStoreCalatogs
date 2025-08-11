@@ -64,7 +64,7 @@ const updateBrand = async (req, res) => {
     }
 
     const [result] = await db.execute(
-      'UPDATE brands SET name = ?, brand_photo = ? WHERE id = ?',
+      'UPDATE brands SET name = ?, brand_photo = IFNULL(?, brand_photo) WHERE id = ?',
       [name, brand_photo || null, req.params.id]
     );
     if (result.affectedRows === 0) {
