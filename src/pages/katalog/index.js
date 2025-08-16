@@ -31,6 +31,7 @@ class KatalogPage {
         this.categories = [];
         this.brands = [];
         this.isInitialized = false;
+        this.isLoadingProducts = false; // Add loading state to prevent duplicate calls
 
         // Initialize utility classes
         this.productFormatter = new ProductFormatter();
@@ -52,17 +53,23 @@ class KatalogPage {
             container.innerHTML = this.getHTML();
             this.setUpNavigation();
             
-            // Initialize dropdowns first and wait for completion
+            // Parse URL parameters first to set initial filter state
+            this.parseUrlParameters();
+            
+            // Initialize dropdowns with URL parameters already set
             await Promise.all([
                 this.initializeCategoryDropdown(),
                 this.initializeBrandDropdown()
             ]);
             
-            // Parse URL parameters after dropdowns are ready
-            this.parseUrlParameters();
+            // Set dropdown values after initialization (without triggering events)
+            this.setInitialDropdownValues();
             
             // Bind events
             this.bindEvents();
+            
+            // Handle browser navigation
+            this.handleBrowserNavigation();
             
             // Initialize endless scroll
             this.endlessScroll.initialize();
@@ -102,11 +109,11 @@ class KatalogPage {
                 allowClear: true,
                 onSelect: (category) => {
                     this.filters.categoryId = category.id;
-                    this.resetAndReload();
+                    this.updateUrlAndReload();
                 },
                 onClear: () => {
                     this.filters.categoryId = null;
-                    this.resetAndReload();
+                    this.updateUrlAndReload();
                 }
             });
 
@@ -137,11 +144,11 @@ class KatalogPage {
                 allowClear: true,
                 onSelect: (brand) => {
                     this.filters.brandId = brand.id;
-                    this.resetAndReload();
+                    this.updateUrlAndReload();
                 },
                 onClear: () => {
                     this.filters.brandId = null;
-                    this.resetAndReload();
+                    this.updateUrlAndReload();
                 }
             });
 
@@ -165,6 +172,7 @@ class KatalogPage {
         const categoryId = urlParams.get('category');
         const brandId = urlParams.get('brand');
 
+        // Set filters from URL parameters
         if (categoryId) {
             this.filters.categoryId = categoryId;
         }
@@ -173,15 +181,66 @@ class KatalogPage {
             this.filters.brandId = brandId;
         }
 
-        // Set dropdown values after a short delay to ensure dropdowns are ready
-        setTimeout(() => {
-            if (categoryId && this.categoryDropdown) {
-                this.categoryDropdown.setValue(categoryId);
-            }
-            if (brandId && this.brandDropdown) {
-                this.brandDropdown.setValue(brandId);
-            }
+        // Store initial values for later dropdown setting
+        this.initialCategoryId = categoryId;
+        this.initialBrandId = brandId;
+    }
+
+    setInitialDropdownValues() {
+        // Set dropdown values without triggering change events
+        if (this.initialCategoryId && this.categoryDropdown) {
+            // Temporarily disable the callback to prevent duplicate API calls
+            const originalOnSelect = this.categoryDropdown.onSelect;
+            this.categoryDropdown.onSelect = () => {}; // Disable callback
+            this.categoryDropdown.setValue(this.initialCategoryId);
+            this.categoryDropdown.onSelect = originalOnSelect; // Restore callback
+        }
+
+        if (this.initialBrandId && this.brandDropdown) {
+            // Temporarily disable the callback to prevent duplicate API calls
+            const originalOnSelect = this.brandDropdown.onSelect;
+            this.brandDropdown.onSelect = () => {}; // Disable callback
+            this.brandDropdown.setValue(this.initialBrandId);
+            this.brandDropdown.onSelect = originalOnSelect; // Restore callback
+        }
+    }
+
+    updateUrlAndReload() {
+        // Don't update if not initialized yet
+        if (!this.isInitialized) {
+            return;
+        }
+
+        // Debounce URL updates to prevent rapid changes
+        clearTimeout(this.urlUpdateTimeout);
+        this.urlUpdateTimeout = setTimeout(() => {
+            // Update URL with current filters
+            this.updateUrl();
+            
+            // Reset and reload products
+            this.resetAndReload();
         }, 100);
+    }
+
+    updateUrl() {
+        const params = new URLSearchParams();
+        
+        if (this.filters.categoryId) {
+            params.set('category', this.filters.categoryId);
+        }
+        
+        if (this.filters.brandId) {
+            params.set('brand', this.filters.brandId);
+            // Find brand name for URL
+            const brand = this.brands.find(b => b.id == this.filters.brandId);
+            if (brand) {
+                params.set('brandName', brand.name);
+            }
+        }
+
+        // Update URL without triggering page reload
+        const newUrl = params.toString() ? `/katalog?${params.toString()}` : '/katalog';
+        window.history.replaceState({}, '', newUrl);
     }
 
     resetAndReload() {
@@ -232,13 +291,14 @@ class KatalogPage {
     }
 
     async loadMoreProducts() {
-        // Prevent multiple simultaneous calls using EndlessScroll's state
-        if (this.endlessScroll.getLoadingState() || !this.endlessScroll.getHasMore()) {
+        // Prevent multiple simultaneous calls
+        if (this.isLoadingProducts || this.endlessScroll.getLoadingState() || !this.endlessScroll.getHasMore()) {
             console.log('⏳ Already loading or no more products, skipping...');
             return;
         }
 
-        // Set loading state at the start
+        // Set loading states
+        this.isLoadingProducts = true;
         this.endlessScroll.setLoading(true);
 
         try {
@@ -273,7 +333,8 @@ class KatalogPage {
             console.error('Error loading products:', error);
             this.handleLoadError(error);
         } finally {
-            // Always clear loading state when done
+            // Always clear loading states when done
+            this.isLoadingProducts = false;
             this.endlessScroll.setLoading(false);
         }
     }
@@ -567,28 +628,28 @@ class KatalogPage {
         if (minPriceInput) {
             minPriceInput.addEventListener('input', this.debounce(() => {
                 this.filters.minPrice = minPriceInput.value || null;
-                this.resetAndReload();
+                this.updateUrlAndReload();
             }, 500));
         }
 
         if (maxPriceInput) {
             maxPriceInput.addEventListener('input', this.debounce(() => {
                 this.filters.maxPrice = maxPriceInput.value || null;
-                this.resetAndReload();
+                this.updateUrlAndReload();
             }, 500));
         }
 
         if (ratingSelect) {
             ratingSelect.addEventListener('change', () => {
                 this.filters.minRating = ratingSelect.value || null;
-                this.resetAndReload();
+                this.updateUrlAndReload();
             });
         }
 
         if (sortSelect) {
             sortSelect.addEventListener('change', () => {
                 this.filters.sortBy = sortSelect.value;
-                this.resetAndReload();
+                this.updateUrlAndReload();
             });
         }
     }
@@ -605,12 +666,29 @@ class KatalogPage {
         };
     }
 
+    handleBrowserNavigation() {
+        // Listen for browser back/forward navigation
+        window.addEventListener('popstate', () => {
+            if (this.isInitialized) {
+                // Re-parse URL parameters and update filters
+                this.parseUrlParameters();
+                this.setInitialDropdownValues();
+                this.resetAndReload();
+            }
+        });
+    }
+
     /**
      * Cleanup method to destroy endless scroll when page is destroyed
      */
     destroy() {
         if (this.endlessScroll) {
             this.endlessScroll.destroy();
+        }
+        
+        // Clean up timeouts
+        if (this.urlUpdateTimeout) {
+            clearTimeout(this.urlUpdateTimeout);
         }
         
         // Clean up any remaining timeouts or intervals

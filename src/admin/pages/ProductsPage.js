@@ -1858,14 +1858,14 @@ class ProductsPage {
       }
 
       if (promoStartDate && product.promo_price_start_date) {
-        // Convert to datetime-local format (local timezone)
+        // Format to datetime-local format (no timezone conversion - database is already UTC+8)
         const formattedStartDate = this.formatDateTimeLocal(product.promo_price_start_date);
         promoStartDate.value = formattedStartDate;
         console.log('Setting promo start date:', product.promo_price_start_date, '→', formattedStartDate);
       }
 
       if (promoEndDate && product.promo_price_end_date) {
-        // Convert to datetime-local format (local timezone)
+        // Format to datetime-local format (no timezone conversion - database is already UTC+8)
         const formattedEndDate = this.formatDateTimeLocal(product.promo_price_end_date);
         promoEndDate.value = formattedEndDate;
         console.log('Setting promo end date:', product.promo_price_end_date, '→', formattedEndDate);
@@ -2152,22 +2152,23 @@ class ProductsPage {
 
     try {
       // Create a new date object to avoid modifying the original
-      const localDate = new Date(date);
+      const dateObj = new Date(date);
 
       // Check if the date is valid
-      if (isNaN(localDate.getTime())) {
+      if (isNaN(dateObj.getTime())) {
         console.warn('Invalid date provided to formatDateTimeLocal:', date);
         return '';
       }
 
-      // Get the timezone offset in minutes and convert to milliseconds
-      const timezoneOffset = localDate.getTimezoneOffset() * 60000;
-
-      // Adjust for local timezone
-      const localTime = new Date(localDate.getTime() - timezoneOffset);
-
-      // Format as YYYY-MM-DDTHH:MM (required format for datetime-local)
-      return localTime.toISOString().slice(0, 16);
+      // NO TIMEZONE CONVERSION - Use the date as-is since database is already in UTC+8
+      // Format as YYYY-MM-DDTHH:MM for datetime-local input
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const hours = String(dateObj.getHours()).padStart(2, '0');
+      const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
     } catch (error) {
       console.error('Error formatting date for datetime-local input:', error);
       return '';

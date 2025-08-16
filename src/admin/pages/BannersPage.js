@@ -845,13 +845,13 @@ class BannersPage {
     const endDateField = document.getElementById('bannerEndDate');
 
     if (startDateField && banner.start_date) {
-      // Convert MySQL datetime to HTML datetime-local format
+      // Format MySQL datetime to HTML datetime-local format (no timezone conversion - database is UTC+8)
       const startDate = new Date(banner.start_date);
       startDateField.value = this.formatDateTimeLocal(startDate);
     }
 
     if (endDateField && banner.end_date) {
-      // Convert MySQL datetime to HTML datetime-local format
+      // Format MySQL datetime to HTML datetime-local format (no timezone conversion - database is UTC+8)
       const endDate = new Date(banner.end_date);
       endDateField.value = this.formatDateTimeLocal(endDate);
     }
@@ -1014,7 +1014,7 @@ class BannersPage {
   }
 
   formatDateTimeLocal(date) {
-    // Format date for HTML datetime-local input (YYYY-MM-DDTHH:MM)
+    // Format date for HTML datetime-local input (YYYY-MM-DDTHH:MM) - no timezone conversion needed
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');

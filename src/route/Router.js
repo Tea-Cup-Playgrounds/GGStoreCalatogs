@@ -1,21 +1,6 @@
-import LoginPage from '../login/LoginPage.js';
-import AdminDashboard from '../admin/AdminDashboard.js';
-import DashboardPage from '../admin/pages/DashboardPage.js';
-import ProductsPage from '../admin/pages/ProductsPage.js';
-import BrandsPage from '../admin/pages/BrandsPage.js';
-import CategoriesPage from '../admin/pages/CategoriesPage.js';
-import BannersPage from '../admin/pages/BannersPage.js';
-import AdminManagementPage from '../admin/pages/AdminManagementPage.js';
 import { AuthService } from '../lib/AuthService.js';
-
-// User
-
-import HomePage from '../pages/home/index.js';
-import KatalogPage from '../pages/katalog/index.js';
-import WishListPage from '../pages/wishlist/index.js';
-import UserBrandsPage from '../pages/brands/index.js';
-import UserSearchResult from '../pages/searchResult/index.js';
-import DetailPage from '../pages/detail/DetailPage.js';
+import LazyLoader from '../lib/LazyLoader.js';
+import performanceMonitor from '../lib/PerformanceMonitor.js';
 
 class Router {
   constructor() {
@@ -26,23 +11,126 @@ class Router {
     this.setupRoutes();
   }
   setupRoutes() {
-    // Public routes
-    this.routes.set('/', { component: HomePage, requiresAuth: false });
-    this.routes.set('/katalog', { component: KatalogPage, requiresAuth: false });
-    this.routes.set('/wishlist', { component: WishListPage, requiresAuth: false });
-    this.routes.set('/brands', { component: UserBrandsPage, requiresAuth: false });
-    this.routes.set('/detail', { component: DetailPage, requiresAuth: false });
-    this.routes.set('/search', { component: UserSearchResult, requiresAuth: false });
-    this.routes.set('/login', { component: LoginPage, requiresAuth: false });
+    // Public routes with lazy loading
+    this.routes.set('/', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../pages/home/index.js'), 
+        'HomePage'
+      ), 
+      requiresAuth: false 
+    });
+    
+    this.routes.set('/katalog', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../pages/katalog/index.js'), 
+        'KatalogPage'
+      ), 
+      requiresAuth: false 
+    });
+    
+    this.routes.set('/wishlist', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../pages/wishlist/index.js'), 
+        'WishListPage'
+      ), 
+      requiresAuth: false 
+    });
+    
+    this.routes.set('/brands', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../pages/brands/index.js'), 
+        'UserBrandsPage'
+      ), 
+      requiresAuth: false 
+    });
+    
+    this.routes.set('/detail', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../pages/detail/DetailPage.js'), 
+        'DetailPage'
+      ), 
+      requiresAuth: false 
+    });
+    
+    this.routes.set('/search', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../pages/searchResult/index.js'), 
+        'UserSearchResult'
+      ), 
+      requiresAuth: false 
+    });
+    
+    this.routes.set('/login', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../login/LoginPage.js'), 
+        'LoginPage'
+      ), 
+      requiresAuth: false 
+    });
 
-    // Admin routes (protected)
-    this.routes.set('/admin', { component: AdminDashboard, requiresAuth: true, defaultChild: '/admin/dashboard' });
-    this.routes.set('/admin/dashboard', { component: DashboardPage, requiresAuth: true, parent: '/admin' });
-    this.routes.set('/admin/products', { component: ProductsPage, requiresAuth: true, parent: '/admin' });
-    this.routes.set('/admin/brands', { component: BrandsPage, requiresAuth: true, parent: '/admin' });
-    this.routes.set('/admin/categories', { component: CategoriesPage, requiresAuth: true, parent: '/admin' });
-    this.routes.set('/admin/banners', { component: BannersPage, requiresAuth: true, parent: '/admin' });
-    this.routes.set('/admin/admins', { component: AdminManagementPage, requiresAuth: true, parent: '/admin' });
+    // Admin routes (protected) with lazy loading
+    this.routes.set('/admin', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../admin/AdminDashboard.js'), 
+        'AdminDashboard'
+      ), 
+      requiresAuth: true, 
+      defaultChild: '/admin/dashboard' 
+    });
+    
+    this.routes.set('/admin/dashboard', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../admin/pages/DashboardPage.js'), 
+        'DashboardPage'
+      ), 
+      requiresAuth: true, 
+      parent: '/admin' 
+    });
+    
+    this.routes.set('/admin/products', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../admin/pages/ProductsPage.js'), 
+        'ProductsPage'
+      ), 
+      requiresAuth: true, 
+      parent: '/admin' 
+    });
+    
+    this.routes.set('/admin/brands', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../admin/pages/BrandsPage.js'), 
+        'BrandsPage'
+      ), 
+      requiresAuth: true, 
+      parent: '/admin' 
+    });
+    
+    this.routes.set('/admin/categories', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../admin/pages/CategoriesPage.js'), 
+        'CategoriesPage'
+      ), 
+      requiresAuth: true, 
+      parent: '/admin' 
+    });
+    
+    this.routes.set('/admin/banners', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../admin/pages/BannersPage.js'), 
+        'BannersPage'
+      ), 
+      requiresAuth: true, 
+      parent: '/admin' 
+    });
+    
+    this.routes.set('/admin/admins', { 
+      component: LazyLoader.instance.createLazyComponent(
+        () => import('../admin/pages/AdminManagementPage.js'), 
+        'AdminManagementPage'
+      ), 
+      requiresAuth: true, 
+      parent: '/admin' 
+    });
   }
 
   init(container) {
@@ -58,8 +146,25 @@ class Router {
       this.handleHashRoute();
     });
 
+    // Preload critical routes
+    this.preloadCriticalRoutes();
+
     // Handle initial route
     this.handleRoute();
+  }
+
+  async preloadCriticalRoutes() {
+    // Preload most commonly accessed routes
+    const criticalRoutes = [
+      { importFn: () => import('../pages/home/index.js'), key: 'HomePage' },
+      { importFn: () => import('../pages/katalog/index.js'), key: 'KatalogPage' },
+      { importFn: () => import('../login/LoginPage.js'), key: 'LoginPage' }
+    ];
+
+    // Preload after a short delay to not block initial render
+    setTimeout(() => {
+      LazyLoader.instance.preloadComponents(criticalRoutes);
+    }, 1000);
   }
 
   navigate(path, replace = false) {
@@ -146,6 +251,9 @@ class Router {
       this.navigate(route.defaultChild, true);
       return;
     }
+
+    // Measure route performance
+    performanceMonitor.measureRouteChange(path.replace('/', '') || 'home');
 
     // Render the route
     await this.renderRoute(route, path);

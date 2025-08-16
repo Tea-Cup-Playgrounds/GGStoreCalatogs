@@ -163,14 +163,14 @@ class HomePage {
                 </div>
 
                 ${isPromoContainer || this.compareDates(product.promo_price_start_date, product.promo_price_end_date) ?
-                    `<span class="card__promo-badge">PROMO</span>
+                `<span class="card__promo-badge">PROMO</span>
                     <div class="card__content">
                         <h3 class="card__content__name ellipsis-3">${product.name}</h3>
                         <p class="card__content__original-price">${this.formatRupiah(product.price)}</p>
                         <p class="card__content__promo-price">${this.formatRupiah(product.promo_price)}</p>
                         <p class="card__content__discount">${this.calculateDiscount(product.price, product.promo_price)}% OFF</p>
                     </div>` :
-                    `<div class="card__content">
+                `<div class="card__content">
                         <h3 class="card__content__name ellipsis-3">${product.name}</h3>
                         <p class="card__content__price">${this.formatRupiah(product.price)}</p>
                     </div>`}
@@ -371,7 +371,7 @@ class HomePage {
         container.innerHTML = this.banners.map(banner => `
             <div class="swiper-slide">
                 <div class="home-banner-item">
-                    <a href="${banner.redirect_url}" target="_blank">
+                    <a href="${banner.redirect_url}">
                         <img src="${banner.banner_image_url}" alt="${banner.title}" class="home-banner-img" />
                     <a>
                 </div>
@@ -571,7 +571,7 @@ class HomePage {
 
     async loadNewProducts() {
         const container = document.querySelector(".produk-rating");
-        
+
         container.innerHTML = '<p class="home-loading-text loading-fade-in">Loading new products...</p>';
 
         try {
@@ -599,16 +599,16 @@ class HomePage {
                         </div>
                         
 
-                ${this.compareDates(product.promo_price_start_date, product.promo_price_end_date) ? 
-                    `<span class="card__promo-badge">PROMO</span>
+                ${this.compareDates(product.promo_price_start_date, product.promo_price_end_date) ?
+                        `<span class="card__promo-badge">PROMO</span>
                     <div class="card__content">
                             <h3 class="card__content__name ellipsis-3">${product.name}</h3>
                             <p class="card__content__original-price">${this.formatRupiah(product.price)}</p>
                             <p class="card__content__promo-price">${this.formatRupiah(product.promo_price)}</p>
                             <p class="card__content__discount">${this.calculateDiscount(product.price, product.promo_price)}% OFF</p>        
                     </div>
-                    ` : 
-                    `<div class="card__content">
+                    ` :
+                        `<div class="card__content">
                             <h3 class="card__content__name ellipsis-3">${product.name}</h3>
                             <p class="card__content__price">${this.formatRupiah(product.price)}</p>       
                     </div>`}
@@ -634,7 +634,7 @@ class HomePage {
 
     async loadPromoProducts() {
         const container = document.querySelector(".produk-promo");
-        
+
         container.innerHTML = '<p class="home-loading-text loading-fade-in">Loading promo products...</p>';
 
         try {

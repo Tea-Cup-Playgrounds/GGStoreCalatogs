@@ -1,3 +1,5 @@
+import { TimeZoneUtils } from '../../lib/TimeZoneUtils.js';
+
 /**
  * ProductFormatter utility class for handling product display formatting
  */
@@ -49,8 +51,6 @@ export class ProductFormatter {
             return false;
         }
 
-        const now = new Date();
-
         // Check if promo has valid pricing
         const hasValidPromoPrice = (product.current_price || product.promo_price) &&
                                    (product.current_price || product.promo_price) < (product.base_price || product.price);
@@ -59,23 +59,11 @@ export class ProductFormatter {
             return false;
         }
 
-        // Check start date
-        if (product.promo_price_start_date) {
-            const startDate = new Date(product.promo_price_start_date);
-            if (startDate > now) {
-                return false;
-            }
-        }
-
-        // Check end date
-        if (product.promo_price_end_date) {
-            const endDate = new Date(product.promo_price_end_date);
-            if (endDate < now) {
-                return false;
-            }
-        }
-
-        return true;
+        // Use TimeZoneUtils for consistent UTC+0800 timezone handling
+        return TimeZoneUtils.isPromoActive(
+            product.promo_price_start_date,
+            product.promo_price_end_date
+        );
     }
 
     /**

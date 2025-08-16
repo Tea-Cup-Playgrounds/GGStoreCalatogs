@@ -451,3 +451,4 @@ html {
 @import "./components/searchable-dropdown.css";
 @import "./components/price-formatter.css";
 @import "./components/qr-generator.css";
+@import "./components/lazy-loading.css";
