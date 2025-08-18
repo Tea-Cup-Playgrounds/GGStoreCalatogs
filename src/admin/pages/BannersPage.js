@@ -64,7 +64,6 @@ class BannersPage {
               </div>
               <form class="banner-form" id="bannerForm">
                 <div class="form-layout">
-                  <!-- Banner Image Section -->
                   <div class="form-section">
                     <div class="section-header">
                       <h4><i class="fas fa-image"></i> Banner Image</h4>
@@ -75,7 +74,6 @@ class BannersPage {
                     </div>
                   </div>
 
-                  <!-- Banner Details Section -->
                   <div class="form-section">
                     <div class="section-header">
                       <h4><i class="fas fa-info-circle"></i> Banner Information</h4>
@@ -103,7 +101,6 @@ class BannersPage {
                     </div>
                   </div>
 
-                  <!-- Banner Scheduling Section -->
                   <div class="form-section">
                     <div class="section-header">
                       <h4><i class="fas fa-calendar-alt"></i> Banner Scheduling</h4>
@@ -633,8 +630,8 @@ class BannersPage {
       maxFiles: 1,
       enableCropping: true,
       cropAspectRatio: 3, // 3:1 aspect ratio for banners (1200x400)
-      maxWidth: 1200,     // Banner width
-      maxHeight: 400,     // Banner height
+      maxWidth: 1200,      // Banner width
+      maxHeight: 400,      // Banner height
       onFilesChange: (files) => {
         console.log('Banner image changed:', files);
       },
@@ -878,12 +875,31 @@ class BannersPage {
     const btnLoading = saveBtn.querySelector('.btn-loading');
 
     const formData = new FormData(e.target);
+
+    // --- MODIFICATION START: Adjust schedule time by -1 hour ---
+    const originalStartDateStr = formData.get('start_date');
+    let startDate = null;
+    if (originalStartDateStr) {
+      const date = new Date(originalStartDateStr);
+      date.setHours(date.getHours() - 1);
+      startDate = this.formatDateTimeLocal(date);
+    }
+
+    const originalEndDateStr = formData.get('end_date');
+    let endDate = null;
+    if (originalEndDateStr) {
+      const date = new Date(originalEndDateStr);
+      date.setHours(date.getHours() - 1);
+      endDate = this.formatDateTimeLocal(date);
+    }
+    // --- MODIFICATION END ---
+    
     const bannerData = {
       title: formData.get('title'),
       redirect_url: formData.get('redirect_url') || null,
       active: formData.has('active'),
-      start_date: formData.get('start_date') || null,
-      end_date: formData.get('end_date') || null
+      start_date: startDate,
+      end_date: endDate
     };
 
     saveBtn.disabled = true;

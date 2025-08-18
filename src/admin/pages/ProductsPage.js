@@ -90,7 +90,6 @@ class ProductsPage {
               </div>
               <form class="product-form" id="productForm">
                 <div class="form-columns">
-                  <!-- Column 1: Image Upload -->
                   <div class="form-column column-images">
                     <div class="column-header">
                       <h4><i class="fas fa-images"></i> Product Images</h4>
@@ -100,7 +99,6 @@ class ProductsPage {
                     </div>
                   </div>
 
-                  <!-- Column 2: Product Details -->
                   <div class="form-column column-details">
                     <div class="column-header">
                       <h4><i class="fas fa-info-circle"></i> Product Details</h4>
@@ -132,7 +130,6 @@ class ProductsPage {
                         <small class="form-text text-muted">This is the base price. You can add variants with different prices later.</small>
                       </div>
 
-                      <!-- NEW PROMO SECTION -->
                       <div class="promo-section">
                         <div class="promo-header">
                           <h5><i class="fas fa-tags"></i> Promotional Settings</h5>
@@ -186,7 +183,6 @@ class ProductsPage {
                     </div>
                   </div>
 
-                  <!-- Column 3: QR Code -->
                   <div class="form-column column-qr">
                     <div class="column-header">
                       <h4><i class="fas fa-qrcode"></i> QR Code</h4>
@@ -1348,43 +1344,43 @@ class ProductsPage {
         </thead>
         <tbody>
           ${this.products.map(product => {
-          // Check if promo is active
-          const now = new Date();
-          const isPromoActive = product.isPromo && 
-            (product.current_price || product.is_promo_active) &&
-            (!product.promo_price_start_date || new Date(product.promo_price_start_date) <= now) &&
-            (!product.promo_price_end_date || new Date(product.promo_price_end_date) >= now);
+            // Check if promo is active
+            const now = new Date();
+            const isPromoActive = product.isPromo && 
+              (product.current_price || product.is_promo_active) &&
+              (!product.promo_price_start_date || new Date(product.promo_price_start_date) <= now) &&
+              (!product.promo_price_end_date || new Date(product.promo_price_end_date) >= now);
 
-          return `
-            <tr>
-              <td>
-                <div>
-                  <div class="font-weight-500">
-                    ${this.escapeHtml(product.name)}
-                    ${isPromoActive ? '<span class="promo-badge">PROMO</span>' : ''}
+            return `
+              <tr>
+                <td>
+                  <div>
+                    <div class="font-weight-500">
+                      ${this.escapeHtml(product.name)}
+                      ${isPromoActive ? '<span class="promo-badge">PROMO</span>' : ''}
+                    </div>
+                    ${product.description ? `<div class="text-sm text-gray-500">${this.escapeHtml(product.description.substring(0, 60))}${product.description.length > 60 ? '...' : ''}</div>` : ''}
                   </div>
-                  ${product.description ? `<div class="text-sm text-gray-500">${this.escapeHtml(product.description.substring(0, 60))}${product.description.length > 60 ? '...' : ''}</div>` : ''}
-                </div>
-              </td>
-              <td>${product.brand_name || '-'}</td>
-              <td>${product.category_name || '-'}</td>
-              <td>
-                ${this.formatPriceCell(product, isPromoActive)}
-              </td>
-              <td>${new Date(product.created_at).toLocaleDateString()}</td>
-              <td>
-                <div class="product-actions">
-                  <button class="btn-icon btn-edit" onclick="window.productsPage.editProduct(${product.id})" title="Edit">
-                    <i class="fas fa-edit"></i>
-                  </button>
-                  <button class="btn-icon btn-delete" onclick="window.productsPage.deleteProduct(${product.id})" title="Delete">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          `;
-        }).join('')}
+                </td>
+                <td>${product.brand_name || '-'}</td>
+                <td>${product.category_name || '-'}</td>
+                <td>
+                  ${this.formatPriceCell(product, isPromoActive)}
+                </td>
+                <td>${new Date(product.created_at).toLocaleDateString()}</td>
+                <td>
+                  <div class="product-actions">
+                    <button class="btn-icon btn-edit" onclick="window.productsPage.editProduct(${product.id})" title="Edit">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-icon btn-delete" onclick="window.productsPage.deleteProduct(${product.id})" title="Delete">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('')}
         </tbody>
       </table>
     `;
@@ -1988,8 +1984,26 @@ class ProductsPage {
 
     const isPromo = document.getElementById('isPromo')?.checked || false;
     const promoPrice = isPromo ? (this.promoPriceFormatter?.getValue() || null) : null;
-    const promoStartDate = formData.get('promo_price_start_date') || null;
-    const promoEndDate = formData.get('promo_price_end_date') || null;
+
+    // --- MODIFICATION START: Adjust promo time by -1 hour ---
+    const originalStartDateStr = formData.get('promo_price_start_date');
+    let promoStartDate = null;
+    if (originalStartDateStr) {
+      const date = new Date(originalStartDateStr);
+      date.setHours(date.getHours() - 1);
+      // Format back to YYYY-MM-DDTHH:mm string format
+      promoStartDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    }
+
+    const originalEndDateStr = formData.get('promo_price_end_date');
+    let promoEndDate = null;
+    if (originalEndDateStr) {
+      const date = new Date(originalEndDateStr);
+      date.setHours(date.getHours() - 1);
+      // Format back to YYYY-MM-DDTHH:mm string format
+      promoEndDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    }
+    // --- MODIFICATION END ---
 
     // Validate promo price if enabled
     if (isPromo && !this.validatePromoPrice(promoPrice)) {
