@@ -19,6 +19,11 @@
   width: 100%;
 }
 
+/* Adjust spacing when admin option is present */
+.bottom-nav.with-admin {
+  gap: 1.5rem;
+}
+
 .bottom-nav a {
   display: flex;
   flex-direction: column;
@@ -28,6 +33,7 @@
   text-decoration: none;
   transition: color 0.3s;
   font-size: 0.85rem;
+  min-width: 50px;
 }
 
 .bottom-nav a.active {
@@ -38,6 +44,47 @@
   font-size: 1.75rem;
 }
 
+/* Admin navigation item styling */
+.bottom-nav .admin-nav-item {
+  color: #838383;
+  position: relative;
+  background: linear-gradient(135deg, rgba(248, 190, 0, 0.1), rgba(248, 190, 0, 0.05));
+  border-radius: 8px;
+  padding: 0.5rem 0.25rem;
+  margin: 0 0.125rem;
+}
+
+.bottom-nav .admin-nav-item:hover {
+  color: #f8be00;
+  background: linear-gradient(135deg, rgba(248, 190, 0, 0.2), rgba(248, 190, 0, 0.1));
+  transform: translateY(-1px);
+}
+
+.bottom-nav .admin-nav-item.active {
+  color: #f8be00;
+  background: linear-gradient(135deg, rgba(248, 190, 0, 0.25), rgba(248, 190, 0, 0.15));
+}
+
+/* Add a subtle indicator for admin item */
+.bottom-nav .admin-nav-item::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  background: #f8be00;
+  border-radius: 50%;
+  opacity: 0.8;
+  box-shadow: 0 0 4px rgba(248, 190, 0, 0.5);
+}
+
+/* Admin icon styling */
+.bottom-nav .admin-nav-item i {
+  color: inherit;
+  filter: drop-shadow(0 1px 2px rgba(248, 190, 0, 0.3));
+}
+
 /* Hide on large screens */
 @media (min-width: 1280px) {
   .bottom-navbar {
@@ -46,6 +93,66 @@
 }
 @media (min-width: 640px) {
   .bottom-nav {
-  gap: 68px;
+    gap: 68px;
+  }
+  
+  /* Adjust gap for admin navigation */
+  .bottom-nav.with-admin {
+    gap: 40px;
+  }
 }
+
+/* Mobile responsive adjustments */
+@media (max-width: 480px) {
+  .bottom-nav {
+    gap: 1rem;
+    padding: 0.5rem 0;
+  }
+  
+  .bottom-nav.with-admin {
+    gap: 0.5rem;
+  }
+  
+  .bottom-nav a {
+    font-size: 0.75rem;
+    min-width: 45px;
+  }
+  
+  .bottom-nav i {
+    font-size: 1.5rem;
+  }
+  
+  /* Make admin indicator smaller on mobile */
+  .bottom-nav .admin-nav-item::before {
+    width: 4px;
+    height: 4px;
+    top: 1px;
+    right: 1px;
+  }
+  
+  /* Adjust admin item padding on mobile */
+  .bottom-nav .admin-nav-item {
+    padding: 0.25rem 0.125rem;
+    margin: 0 0.0625rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+  .bottom-nav {
+    gap: 0.25rem;
+  }
+  
+  .bottom-nav.with-admin {
+    gap: 0.25rem;
+  }
+  
+  .bottom-nav a {
+    font-size: 0.7rem;
+    min-width: 40px;
+  }
+  
+  .bottom-nav i {
+    font-size: 1.25rem;
+  }
 }

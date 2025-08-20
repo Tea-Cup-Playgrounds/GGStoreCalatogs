@@ -121,6 +121,14 @@ class AdminDashboard {
             <i class="fas fa-list"></i>
             <span>Categories</span>
           </a>
+          <a href="/admin/banners" class="bottom-nav-link" data-route="/admin/banners">
+            <i class="fas fa-image"></i>
+            <span>Banners</span>
+          </a>
+          <a href="/admin/admins" class="bottom-nav-link" data-route="/admin/admins">
+            <i class="fas fa-users-cog"></i>
+            <span>Admins</span>
+          </a>
         </nav>
       </div>
       
@@ -424,8 +432,9 @@ class AdminDashboard {
             right: 0;
             background: #000000;
             border-top: 1px solid #E6B120;
-            padding: 0.5rem 0;
+            padding: 0.5rem 0.25rem;
             z-index: 1002;
+            gap: 0.25rem;
           }
 
           .bottom-nav-link {
@@ -434,21 +443,84 @@ class AdminDashboard {
             align-items: center;
             text-decoration: none;
             color: #FFFFFF;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
+            flex: 1;
+            min-width: 0;
+            padding: 0.25rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease;
+          }
+
+          .bottom-nav-link:hover {
+            background: rgba(230, 177, 32, 0.1);
+            color: #FFCD29;
+            text-decoration: none;
           }
 
           .bottom-nav-link i {
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             margin-bottom: 0.25rem;
+          }
+
+          .bottom-nav-link span {
+            text-align: center;
+            line-height: 1.1;
+            word-break: break-word;
           }
 
           .bottom-nav-link.active {
             color: #FFCD29;
+            background: rgba(255, 205, 41, 0.15);
           }
 
           /* Adjust page content padding so it doesn't get hidden */
           .admin-content {
-            padding-bottom: 3.5rem;
+            padding-bottom: 4rem;
+          }
+        }
+
+        /* Extra small screens - optimize for 6 navigation items */
+        @media (max-width: 480px) {
+          .mobile-bottom-nav {
+            padding: 0.375rem 0.125rem;
+            gap: 0.125rem;
+          }
+
+          .bottom-nav-link {
+            font-size: 0.65rem;
+            padding: 0.125rem;
+          }
+
+          .bottom-nav-link i {
+            font-size: 1rem;
+            margin-bottom: 0.125rem;
+          }
+
+          .bottom-nav-link span {
+            font-size: 0.6rem;
+          }
+        }
+
+        /* Very small screens - ultra compact */
+        @media (max-width: 360px) {
+          .mobile-bottom-nav {
+            padding: 0.25rem 0.0625rem;
+            gap: 0.0625rem;
+          }
+
+          .bottom-nav-link {
+            font-size: 0.6rem;
+            padding: 0.0625rem;
+          }
+
+          .bottom-nav-link i {
+            font-size: 0.9rem;
+            margin-bottom: 0.0625rem;
+          }
+
+          .bottom-nav-link span {
+            font-size: 0.55rem;
+            line-height: 1;
           }
         }
       </style>
@@ -491,9 +563,21 @@ class AdminDashboard {
       await this.handleLogout();
     });
 
-    // Navigation links
+    // Navigation links (sidebar)
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const route = link.dataset.route;
+        if (route) {
+          this.navigateToRoute(route);
+        }
+      });
+    });
+
+    // Mobile bottom navigation links
+    const bottomNavLinks = document.querySelectorAll('.bottom-nav-link');
+    bottomNavLinks.forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
         const route = link.dataset.route;
@@ -533,8 +617,8 @@ class AdminDashboard {
   }
 
   navigateToRoute(route) {
-    // Update active nav link
-    const navLinks = document.querySelectorAll('.nav-link');
+    // Update active nav link for both sidebar and mobile navigation
+    const navLinks = document.querySelectorAll('.nav-link, .bottom-nav-link');
     navLinks.forEach(link => {
       link.classList.remove('active');
       if (link.dataset.route === route) {
@@ -565,9 +649,19 @@ class AdminDashboard {
 
   updateActiveNavLink() {
     const currentPath = window.location.pathname;
-    const navLinks = document.querySelectorAll('.nav-link');
     
+    // Update sidebar navigation
+    const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
+      link.classList.remove('active');
+      if (link.dataset.route === currentPath) {
+        link.classList.add('active');
+      }
+    });
+
+    // Update mobile bottom navigation
+    const bottomNavLinks = document.querySelectorAll('.bottom-nav-link');
+    bottomNavLinks.forEach(link => {
       link.classList.remove('active');
       if (link.dataset.route === currentPath) {
         link.classList.add('active');

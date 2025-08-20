@@ -28,6 +28,11 @@ export class ImageCropper {
     this.dragStart = { x: 0, y: 0 };
     this.onCropComplete = options.onCropComplete || (() => {});
     this.onCancel = options.onCancel || (() => {});
+    this.originalViewport = null;
+    
+    // Touch event tracking
+    this.touchStartTime = 0;
+    this.lastTouchEnd = 0;
   }
 
   /**
@@ -109,19 +114,50 @@ export class ImageCropper {
       this.onCancel();
     });
 
-    // Crop area dragging
+    // Crop area dragging - Mouse events
     this.cropAreaEl.addEventListener('mousedown', this.startDrag.bind(this));
     document.addEventListener('mousemove', this.drag.bind(this));
     document.addEventListener('mouseup', this.endDrag.bind(this));
 
-    // Crop handles resizing
+    // Crop area dragging - Touch events
+    this.cropAreaEl.addEventListener('touchstart', this.startDragTouch.bind(this), { passive: false });
+    document.addEventListener('touchmove', this.dragTouch.bind(this), { passive: false });
+    document.addEventListener('touchend', this.endDragTouch.bind(this));
+
+    // Crop handles resizing - Mouse events
     const handles = this.modal.querySelectorAll('.crop-handle');
     handles.forEach(handle => {
       handle.addEventListener('mousedown', this.startResize.bind(this));
+      // Touch events for handles
+      handle.addEventListener('touchstart', this.startResizeTouch.bind(this), { passive: false });
     });
+
+    // Touch events for document
+    document.addEventListener('touchmove', this.resizeTouch.bind(this), { passive: false });
+    document.addEventListener('touchend', this.endResizeTouch.bind(this));
 
     // Prevent context menu on canvas
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    
+    // Prevent default touch behaviors on crop area and handles
+    this.cropAreaEl.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    handles.forEach(handle => {
+      handle.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+
+    // Prevent scrolling when interacting with the modal on mobile
+    this.modal.addEventListener('touchmove', (e) => {
+      // Only prevent default if the touch is on interactive elements
+      if (e.target.closest('.crop-area') || e.target.closest('.crop-handle')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
   }
 
   /**
@@ -137,6 +173,13 @@ export class ImageCropper {
           this.setupCanvas();
           this.modal.style.display = 'block';
           document.body.style.overflow = 'hidden';
+          
+          // Prevent viewport scaling on mobile
+          const viewport = document.querySelector('meta[name="viewport"]');
+          if (viewport) {
+            this.originalViewport = viewport.content;
+            viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+          }
           
           // Set up promise resolution
           this.onCropComplete = resolve;
@@ -156,14 +199,25 @@ export class ImageCropper {
   hide() {
     this.modal.style.display = 'none';
     document.body.style.overflow = '';
+    
+    // Restore original viewport settings
+    if (this.originalViewport) {
+      const viewport = document.querySelector('meta[name="viewport"]');
+      if (viewport) {
+        viewport.content = this.originalViewport;
+      }
+      this.originalViewport = null;
+    }
   }
 
   /**
    * Setup canvas and initial crop area
    */
   setupCanvas() {
-    const containerWidth = 600;
-    const containerHeight = 400;
+    // Responsive container sizing
+    const isMobile = window.innerWidth <= 768;
+    const containerWidth = isMobile ? Math.min(window.innerWidth - 80, 400) : 600;
+    const containerHeight = isMobile ? Math.min(window.innerHeight - 200, 300) : 400;
     
     // Calculate display size maintaining aspect ratio
     const imgAspect = this.image.width / this.image.height;
@@ -273,6 +327,34 @@ export class ImageCropper {
   }
 
   /**
+   * Start dragging crop area - Touch version
+   */
+  startDragTouch(e) {
+    // Only start dragging if not touching a resize handle
+    if (e.target.classList.contains('crop-handle')) {
+      return;
+    }
+    
+    // Prevent double-tap zoom
+    const now = new Date().getTime();
+    const timeSince = now - this.lastTouchEnd;
+    if (timeSince < 300 && timeSince > 0) {
+      e.preventDefault();
+      return;
+    }
+    
+    this.isDragging = true;
+    this.touchStartTime = now;
+    const touch = e.touches[0];
+    const rect = this.canvas.getBoundingClientRect();
+    this.dragStart = {
+      x: touch.clientX - rect.left - this.cropArea.x,
+      y: touch.clientY - rect.top - this.cropArea.y
+    };
+    e.preventDefault();
+  }
+
+  /**
    * Drag crop area
    */
   drag(e) {
@@ -292,12 +374,43 @@ export class ImageCropper {
   }
 
   /**
+   * Drag crop area - Touch version
+   */
+  dragTouch(e) {
+    if (this.isDragging) {
+      const touch = e.touches[0];
+      const rect = this.canvas.getBoundingClientRect();
+      const newX = touch.clientX - rect.left - this.dragStart.x;
+      const newY = touch.clientY - rect.top - this.dragStart.y;
+
+      // Apply constraints immediately
+      this.cropArea.x = Math.max(0, Math.min(newX, this.canvas.width - this.cropArea.width));
+      this.cropArea.y = Math.max(0, Math.min(newY, this.canvas.height - this.cropArea.height));
+
+      this.updateCropAreaDisplay();
+      e.preventDefault();
+    } else if (this.isResizing) {
+      this.resizeTouch(e);
+    }
+  }
+
+  /**
    * End dragging
    */
   endDrag() {
     this.isDragging = false;
     this.isResizing = false;
     this.resizeHandle = null;
+  }
+
+  /**
+   * End dragging - Touch version
+   */
+  endDragTouch() {
+    this.isDragging = false;
+    this.isResizing = false;
+    this.resizeHandle = null;
+    this.lastTouchEnd = new Date().getTime();
   }
 
   /**
@@ -313,6 +426,29 @@ export class ImageCropper {
       y: e.clientY,
       canvasX: e.clientX - rect.left,
       canvasY: e.clientY - rect.top,
+      cropX: this.cropArea.x,
+      cropY: this.cropArea.y,
+      cropWidth: this.cropArea.width,
+      cropHeight: this.cropArea.height
+    };
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  /**
+   * Start resizing crop area - Touch version
+   */
+  startResizeTouch(e) {
+    this.isResizing = true;
+    this.resizeHandle = e.target.className.split(' ').find(cls => cls.startsWith('crop-handle-'));
+    
+    const touch = e.touches[0];
+    const rect = this.canvas.getBoundingClientRect();
+    this.dragStart = {
+      x: touch.clientX,
+      y: touch.clientY,
+      canvasX: touch.clientX - rect.left,
+      canvasY: touch.clientY - rect.top,
       cropX: this.cropArea.x,
       cropY: this.cropArea.y,
       cropWidth: this.cropArea.width,
@@ -483,6 +619,177 @@ export class ImageCropper {
     // Apply final constraints to ensure everything is within bounds
     this.constrainCropArea();
     this.updateCropAreaDisplay();
+  }
+
+  /**
+   * Resize crop area with touch events
+   */
+  resizeTouch(e) {
+    if (!this.isResizing || !this.resizeHandle || !e.touches[0]) return;
+
+    const touch = e.touches[0];
+    const rect = this.canvas.getBoundingClientRect();
+    const currentX = touch.clientX - rect.left;
+    const currentY = touch.clientY - rect.top;
+
+    let newX = this.dragStart.cropX;
+    let newY = this.dragStart.cropY;
+    let newWidth = this.dragStart.cropWidth;
+    let newHeight = this.dragStart.cropHeight;
+
+    // Calculate new dimensions based on handle and constrain to canvas bounds
+    switch (this.resizeHandle) {
+      case 'crop-handle-nw':
+        // Northwest handle: constrain to canvas bounds
+        newX = Math.max(0, Math.min(currentX, this.dragStart.cropX + this.dragStart.cropWidth - 20));
+        newY = Math.max(0, Math.min(currentY, this.dragStart.cropY + this.dragStart.cropHeight - 20));
+        newWidth = this.dragStart.cropX + this.dragStart.cropWidth - newX;
+        newHeight = this.dragStart.cropY + this.dragStart.cropHeight - newY;
+        break;
+        
+      case 'crop-handle-ne':
+        // Northeast handle
+        newY = Math.max(0, Math.min(currentY, this.dragStart.cropY + this.dragStart.cropHeight - 20));
+        newWidth = Math.max(20, Math.min(currentX - this.dragStart.cropX, this.canvas.width - this.dragStart.cropX));
+        newHeight = this.dragStart.cropY + this.dragStart.cropHeight - newY;
+        break;
+        
+      case 'crop-handle-sw':
+        // Southwest handle
+        newX = Math.max(0, Math.min(currentX, this.dragStart.cropX + this.dragStart.cropWidth - 20));
+        newWidth = this.dragStart.cropX + this.dragStart.cropWidth - newX;
+        newHeight = Math.max(20, Math.min(currentY - this.dragStart.cropY, this.canvas.height - this.dragStart.cropY));
+        break;
+        
+      case 'crop-handle-se':
+        // Southeast handle
+        newWidth = Math.max(20, Math.min(currentX - this.dragStart.cropX, this.canvas.width - this.dragStart.cropX));
+        newHeight = Math.max(20, Math.min(currentY - this.dragStart.cropY, this.canvas.height - this.dragStart.cropY));
+        break;
+    }
+
+    // Maintain aspect ratio while respecting canvas bounds
+    if (this.options.aspectRatio === 1) {
+      // Square aspect ratio (1:1)
+      const size = Math.min(newWidth, newHeight);
+      
+      // Ensure the square fits within canvas bounds from current position
+      const maxSizeFromX = this.canvas.width - newX;
+      const maxSizeFromY = this.canvas.height - newY;
+      const constrainedSize = Math.min(size, maxSizeFromX, maxSizeFromY);
+      
+      newWidth = Math.max(20, constrainedSize);
+      newHeight = Math.max(20, constrainedSize);
+    } else {
+      // Rectangular aspect ratio (e.g., 3:1)
+      const widthBasedHeight = newWidth / this.options.aspectRatio;
+      const heightBasedWidth = newHeight * this.options.aspectRatio;
+
+      // Choose the dimension that keeps us within bounds
+      if (widthBasedHeight <= newHeight && newY + widthBasedHeight <= this.canvas.height) {
+        newHeight = widthBasedHeight;
+      } else if (heightBasedWidth <= newWidth && newX + heightBasedWidth <= this.canvas.width) {
+        newWidth = heightBasedWidth;
+      } else {
+        // If neither fits perfectly, use the smaller constraint
+        if (widthBasedHeight < heightBasedWidth) {
+          newHeight = Math.min(widthBasedHeight, this.canvas.height - newY);
+          newWidth = newHeight * this.options.aspectRatio;
+        } else {
+          newWidth = Math.min(heightBasedWidth, this.canvas.width - newX);
+          newHeight = newWidth / this.options.aspectRatio;
+        }
+      }
+    }
+
+    // Apply minimum size constraints
+    const minWidth = this.options.aspectRatio === 1 ? 50 : 150;
+    const minHeight = this.options.aspectRatio === 1 ? 50 : 50;
+
+    if (newWidth < minWidth || newHeight < minHeight) {
+      if (this.options.aspectRatio === 1) {
+        const minSize = Math.max(minWidth, minHeight);
+        // Check if minimum size fits in remaining canvas space
+        if (newX + minSize <= this.canvas.width && newY + minSize <= this.canvas.height) {
+          newWidth = minSize;
+          newHeight = minSize;
+        } else {
+          // If minimum size doesn't fit, don't resize
+          return;
+        }
+      } else {
+        // Maintain aspect ratio for minimum size
+        const minWidthFromAspect = minHeight * this.options.aspectRatio;
+        const minHeightFromAspect = minWidth / this.options.aspectRatio;
+        
+        if (minWidthFromAspect >= minWidth) {
+          newWidth = minWidthFromAspect;
+          newHeight = minHeight;
+        } else {
+          newWidth = minWidth;
+          newHeight = minHeightFromAspect;
+        }
+        
+        // Check if minimum size fits in canvas
+        if (newX + newWidth > this.canvas.width || newY + newHeight > this.canvas.height) {
+          return; // Don't resize if it would exceed bounds
+        }
+      }
+    }
+
+    // Final boundary check - ensure the crop area fits completely within canvas
+    if (newX + newWidth > this.canvas.width) {
+      const excess = (newX + newWidth) - this.canvas.width;
+      if (this.resizeHandle.includes('w')) {
+        // If resizing from west side, move the crop area
+        newX = Math.max(0, newX + excess);
+        newWidth = this.canvas.width - newX;
+      } else {
+        // If resizing from east side, limit the width
+        newWidth = this.canvas.width - newX;
+      }
+      
+      // Recalculate height to maintain aspect ratio
+      if (this.options.aspectRatio !== 1) {
+        newHeight = newWidth / this.options.aspectRatio;
+      }
+    }
+    
+    if (newY + newHeight > this.canvas.height) {
+      const excess = (newY + newHeight) - this.canvas.height;
+      if (this.resizeHandle.includes('n')) {
+        // If resizing from north side, move the crop area
+        newY = Math.max(0, newY + excess);
+        newHeight = this.canvas.height - newY;
+      } else {
+        // If resizing from south side, limit the height
+        newHeight = this.canvas.height - newY;
+      }
+      
+      // Recalculate width to maintain aspect ratio
+      if (this.options.aspectRatio !== 1) {
+        newWidth = newHeight * this.options.aspectRatio;
+      }
+    }
+
+    // Update crop area
+    this.cropArea.x = newX;
+    this.cropArea.y = newY;
+    this.cropArea.width = newWidth;
+    this.cropArea.height = newHeight;
+
+    // Apply final constraints to ensure everything is within bounds
+    this.constrainCropArea();
+    this.updateCropAreaDisplay();
+    e.preventDefault();
+  }
+
+  /**
+   * End resizing - Touch version
+   */
+  endResizeTouch() {
+    this.isResizing = false;
+    this.resizeHandle = null;
   }
 
   /**

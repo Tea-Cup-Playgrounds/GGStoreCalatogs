@@ -685,10 +685,10 @@ class BannersPage {
       <div class="banner-card">
         <div class="banner-preview">
           ${banner.banner_image_url ?
-            `<img src="${this.apiService.getStaticURL(banner.banner_image_url)}" alt="${this.escapeHtml(banner.title)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        `<img src="${this.apiService.getStaticURL(banner.banner_image_url)}" alt="${this.escapeHtml(banner.title)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
              <div class="placeholder" style="display: none;"><i class="fas fa-image"></i></div>` :
-            `<div class="placeholder"><i class="fas fa-image"></i></div>`
-          }
+        `<div class="placeholder"><i class="fas fa-image"></i></div>`
+      }
           <div class="banner-status ${this.getBannerStatusClass(banner)}">
             ${this.getBannerStatusText(banner)}
           </div>
@@ -701,25 +701,25 @@ class BannersPage {
               Created: ${new Date(banner.created_at).toLocaleDateString()}
             </div>
             ${banner.start_date ?
-              `<div class="meta-item">
+        `<div class="meta-item">
                 <i class="fas fa-play"></i>
                 Starts: ${new Date(banner.start_date).toLocaleString()}
               </div>` : ''
-            }
+      }
             ${banner.end_date ?
-              `<div class="meta-item">
+        `<div class="meta-item">
                 <i class="fas fa-stop"></i>
                 Ends: ${new Date(banner.end_date).toLocaleString()}
               </div>` : ''
-            }
+      }
           </div>
           ${banner.redirect_url ?
-            `<a href="${banner.redirect_url}" target="_blank" class="banner-url">
+        `<a href="${banner.redirect_url}" target="_blank" class="banner-url">
               <i class="fas fa-external-link-alt"></i>
               ${banner.redirect_url}
             </a>` :
-            ''
-          }
+        ''
+      }
           <div class="banner-actions">
             <button class="btn-icon btn-edit" data-action="edit" data-banner-id="${banner.id}" title="Edit banner">
               <i class="fas fa-edit"></i>
@@ -893,7 +893,7 @@ class BannersPage {
       endDate = this.formatDateTimeLocal(date);
     }
     // --- MODIFICATION END ---
-    
+
     const bannerData = {
       title: formData.get('title'),
       redirect_url: formData.get('redirect_url') || null,
